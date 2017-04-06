@@ -68,6 +68,7 @@ public:
 	void setMoney(int n);
 	void setMedic();
 	void deleteShip(Ship* i);
+	void deleteShip(Ship* i, vector<Ship*>& ships);
 	
 	void destroyShip(Ship* i);
 

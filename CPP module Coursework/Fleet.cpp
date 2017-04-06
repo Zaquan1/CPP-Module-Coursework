@@ -1,7 +1,8 @@
 #include "Fleet.h"
 
 
-Fleet::Fleet(string _name) : corporationName(_name), money(10000)
+Fleet::Fleet(string _name)
+	: corporationName(_name), money(10000), medic(false)
 {
 }
 
@@ -14,6 +15,8 @@ int Fleet::getWeight() const
 	{
 		weight += list.at(i)->getWeight();
 	}
+	if (hasMedic())
+		weight++;
 
 	return weight;
 }
@@ -27,6 +30,9 @@ int Fleet::getEnergyConsumption() const
 	{
 		consumption += list.at(i)->getEnergyConsumption();
 	}
+	if (hasMedic())
+		consumption++;
+
 	return consumption;
 }
 
@@ -52,6 +58,8 @@ int Fleet::getCost() const
 	{
 		cost += list.at(i)->getCost();
 	}
+	if (hasMedic())
+		cost += 1000;
 	return cost;
 }
 
@@ -170,13 +178,40 @@ int Fleet::getMoney() const { return money; }
 
 void Fleet::setMoney(int n) { money = n; }
 
-void Fleet::setMedic() { medic = true; }
+void Fleet::setMedic() { medic = !medic; }
 
 void Fleet::destroyShip(Ship* i) { i->destroyShip(); }
 
 void Fleet::deleteShip(Ship* i)
 {
-	delete i;
+	int type = i->getShipType();
+
+	if (type == COLONY)
+	{
+		deleteShip(i, _colonyShips);
+	}
+	else if (type == MILITARY)
+	{
+		deleteShip(i, _militaryEscortShips);
+	}
+	else if (type == SOLAR)
+	{
+		deleteShip(i, _solarSailShips);
+	}
+}
+
+void Fleet::deleteShip(Ship* i, vector<Ship*>& ships)
+{
+	int k;
+	for (k = 0; k < ships.size(); k++)
+	{
+		if (ships.at(k) == i)
+		{
+			ships.erase(ships.begin()+k);
+			money += i->getCost();
+			delete i;
+		}
+	}
 }
 
 
@@ -282,7 +317,7 @@ void checkStatus(Fleet* newFleet)
 {
 	cout << "______________________________" << endl << "\tFleet Status" << endl << "______________________________" << endl;
 	cout << "Fleet Name: " << newFleet->getCorporationName() << endl;
-	cout << "Fleet's cost: " << newFleet->getCost() + (newFleet->hasMedic() ? 1000 : 0) << endl;
+	cout << "Fleet's cost: " << newFleet->getCost() << endl;
 	cout << "Total Money left: " << newFleet->getMoney() << endl;
 	cout << "Total Fleet's weight: " << newFleet->getWeight() << endl;
 	cout << "Total Fleet's energy consumption: " << newFleet->getEnergyConsumption() << endl;
@@ -380,14 +415,21 @@ void addShip(Fleet* F)
 			cin >> shipO;
 			if (shipO == 1)
 			{
-				if (F->getMoney() - 1000 >= 0)
+				if (F->hasMedic())
 				{
-					F->setMedic();
-					F->setMoney(F->getMoney() - 1000);
+					cout << "\nAlready bought Medic Ship\n";
 				}
 				else
 				{
-					cout << "\nNot enough money to buy Medic Ship\n";
+					if (F->getMoney() - 1000 >= 0)
+					{
+						F->setMedic();
+						F->setMoney(F->getMoney() - 1000);
+					}
+					else
+					{
+						cout << "\nNot enough money to buy Medic Ship\n";
+					}
 				}
 			}
 			break;
@@ -400,9 +442,42 @@ void addShip(Fleet* F)
 	} while (option != '5');
 }
 
-void deleteShip(Fleet* F)
+void DeleteShip(Fleet* F)
 {
+	vector<Ship*> list = F->shipList();
+	int option;
+	int i;
+	cout << "\nMenu -> Add Ship\n" << "~~~~~~~~~~~~~~~~~~\n";
+	cout << "Choose a ship to be deleted:- \n";
+	for (i = 0; i < list.size(); i++)
+	{
+		cout << i + 1 << ". " << list.at(i)->getTypeName() << endl;
+	}
+	if (F->hasMedic())
+	{
+		cout << ++i << ". Medic\n";
+	}
+	cout << ++i << ". Back\n";
+	cout << ":: ";
+
+	cin >> option;
+	option--;
+	if (option < list.size())
+	{
+		F->deleteShip(list.at(option));
+		cout << "\nDelete successful\n";
+	}
+	else if (option == list.size())
+	{
+		if (F->hasMedic())
+		{
+			F->setMedic();
+			F->setMoney(F->getMoney() + 1000);
+			cout << "\nDelete successful\n";
+		}
+	}
 	
+
 }
 
 Fleet* userInterfaceCreateFleet()
@@ -434,7 +509,7 @@ Fleet* userInterfaceCreateFleet()
 			addShip(newFleet);
 			break;
 		case '3':
-			deleteShip(newFleet);
+			DeleteShip(newFleet);
 			break;
 		case '4':
 			cout << "Are you sure? (Y to exit, N to cancel) : ";
@@ -447,6 +522,7 @@ Fleet* userInterfaceCreateFleet()
 		}
 
 	} while (exit == 'n' || exit == 'N');
+
 	return newFleet;
 }
 
