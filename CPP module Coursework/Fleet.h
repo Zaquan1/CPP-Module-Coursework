@@ -4,6 +4,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cmath>
+
+#include <thread>
+#include <chrono>
+#include <condition_variable>
 
 using namespace std;
 
@@ -27,6 +32,7 @@ public:
 	virtual void status() const {};
 
 	int compareShip(const Ship& d) const;
+
 
 protected:
 
@@ -72,8 +78,11 @@ public:
 	
 	void destroyShip(Ship* i);
 
+	void setdistance(long long unsigned int c) { currentDistance = c; }
+	long long unsigned int getdistance() { return currentDistance; };
 private:
 
+	long long unsigned int currentDistance;
 	string corporationName;
 	int money;
 	bool medic;

@@ -315,7 +315,8 @@ string getString(std::istream & is)
 
 void checkStatus(Fleet* newFleet)
 {
-	cout << "______________________________" << endl << "\tFleet Status" << endl << "______________________________" << endl;
+	cout << "______________________________" << endl << "\tFleet Status" << endl;
+	cout << "______________________________" << endl;
 	cout << "Fleet Name: " << newFleet->getCorporationName() << endl;
 	cout << "Fleet's cost: " << newFleet->getCost() << endl;
 	cout << "Total Money left: " << newFleet->getMoney() << endl;
@@ -330,7 +331,7 @@ void checkStatus(Fleet* newFleet)
 	{
 		cout << i + 1 << ". " << list.at(i)->getTypeName() << endl;
 	}
-	cout << "______________________________" << endl << endl;
+	cout << "______________________________\n\n";
 }
 
 void addShip(Fleet* F)
@@ -339,7 +340,8 @@ void addShip(Fleet* F)
 	int shipO;
 	do
 	{
-		cout << "\nMenu -> Add Ship\n" << "~~~~~~~~~~~~~~~~~~\n";
+		cout << "\nMenu -> Add Ship\n";
+		cout << "~~~~~~~~~~~~~~~~~~\n";
 		cout << "1. Colony Ship\n";
 		cout << "2. Solar Sail Ship\n";
 		cout << "3. Military Escort Ship\n";
@@ -351,7 +353,8 @@ void addShip(Fleet* F)
 		{
 		case '1':
 			int i;
-			cout << "\nMenu -> Add Ship -> Colony Ship\n" << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+			cout << "\nMenu -> Add Ship -> Colony Ship\n";
+			cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 			cout << "\tName\tCost\tColonist\tweight\tEnergyConsumption\n";
 
 			for (i = 0; i < colony.size(); i++)
@@ -371,7 +374,8 @@ void addShip(Fleet* F)
 			break;
 
 		case '2':
-			cout << "\nMenu -> Add Ship\ -> Solar Sail Ship\n" << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+			cout << "\nMenu -> Add Ship\ -> Solar Sail Ship\n";
+			cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 			cout << "\tName\t\tCost\tEnergyGeneration\tweight\tEnergyConsumption\n";
 
 			for (i = 0; i < solaris.size(); i++)
@@ -390,7 +394,8 @@ void addShip(Fleet* F)
 			break;
 
 		case '3':
-			cout << "\nMenu -> Add Ship -> Military Escort Ship\n" << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+			cout << "\nMenu -> Add Ship -> Military Escort Ship\n";
+			cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 			cout << "\tName\tCost\tfighter\tweight\tEnergyConsumption\n";
 
 			for (i = 0; i < fighter.size(); i++)
@@ -408,7 +413,8 @@ void addShip(Fleet* F)
 			}
 			break;
 		case '4':
-			cout << "\nMenu -> Add Ship -> Medic Ship\n" << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+			cout << "\nMenu -> Add Ship -> Medic Ship\n";
+			cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 			cout << "\tName\tCost\tweight\tEnergyConsumption\n";
 			cout << "1. \tMedic\t1000\t1\t1\n";
 			cout << "2. Back\nBuy:: ";
@@ -425,6 +431,7 @@ void addShip(Fleet* F)
 					{
 						F->setMedic();
 						F->setMoney(F->getMoney() - 1000);
+						cout << "\nMedic successfully purchased\n";
 					}
 					else
 					{
@@ -526,6 +533,50 @@ Fleet* userInterfaceCreateFleet()
 	return newFleet;
 }
 
+condition_variable cv;
+mutex cv_m;
+
+void run(Fleet* fleet)
+{
+	long long unsigned int distance = (int)(3.121974372 * pow(10,10));//(0,17)
+	long long unsigned int lightSpeed = 299792458;
+	long long unsigned int fleetSpeed = ((lightSpeed * 100) / sqrt(fleet->getWeight()));
+	long long unsigned int currentDistance = 0;
+	
+	std::unique_lock<std::mutex> lk(cv_m);
+	cout << fleet->getCorporationName() << " prepare for launch\n";
+	cv.wait(lk);
+	lk.unlock();
+	cv.notify_all();
+	cout << fleet->getCorporationName() << " launch!!\n";
+	while (true)
+	{
+		currentDistance += fleetSpeed;
+		fleet->setdistance(currentDistance);
+		//cout << fleet->getCorporationName() << " current distance: " << currentDistance << endl;
+		if (distance <= currentDistance)
+		{
+			break;
+		}
+		this_thread::sleep_for(chrono::seconds(1));//we'll gonna w8 for 4 years if we go with this. change for month for every sec
+		
+	}
+	cout << "Fleet " << fleet->getCorporationName() << " has reach Gaia!\n";
+}
+
+void signals()
+{
+	this_thread::sleep_for(chrono::seconds(2));
+	cout << "launch in:\n";
+	for (int i = 5; i > 0; i--)
+	{
+		cout << i << endl;
+		this_thread::sleep_for(chrono::seconds(1));
+	}
+	std::lock_guard<std::mutex> lk(cv_m);
+	cv.notify_all();
+}
+
 int main()
 {
 	vector<Fleet*> fleets;
@@ -538,6 +589,33 @@ int main()
 	{
 		fleets.push_back(userInterfaceCreateFleet());
 	}
+	vector<thread> threads;
+	for (int i = 0; i < fleetNumber; i++)
+	{
+		threads.push_back(thread(run, fleets.at(i)));
+	}
+	threads.push_back(thread(signals));
 	
+	int test;
+	do
+	{
+		cin >> test;
+		if (test == 1)
+		{
+			for (int i = 0; i < fleets.size(); i++)
+			{
+				cout << fleets.at(i)->getCorporationName() << ": \t" << fleets.at(i)->getdistance()<< endl;
+			}
+		}
+		else
+		{
+			break;
+		}
+	} while (test == 1);
+
+	for (int i = 0; i < threads.size(); i++)
+	{
+		threads.at(i).join();
+	}
 	
 }
