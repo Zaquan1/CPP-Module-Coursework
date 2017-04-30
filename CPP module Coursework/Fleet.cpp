@@ -290,10 +290,12 @@ MilitaryEscortShip::MilitaryEscortShip(const MilitaryEscortShip& mes)
 
 int MilitaryEscortShip::getNrProtected() const { return nr; }
 
+//default ship
 vector<ColonyShip> colony;
 vector<SolarSailShip> solaris;
 vector<MilitaryEscortShip> fighter;
 
+//default ship option
 void createShips()
 {
 	colony.push_back(ColonyShip("Ferry", 500, 10, 5, 100));
@@ -313,6 +315,7 @@ string getString(std::istream & is)
 	return input;
 }
 
+//user interface for checking the fleet status
 void checkStatus(Fleet* newFleet)
 {
 	cout << "______________________________" << endl << "\tFleet Status" << endl;
@@ -334,6 +337,7 @@ void checkStatus(Fleet* newFleet)
 	cout << "______________________________\n\n";
 }
 
+//user interface for add ship
 void addShip(Fleet* F)
 {
 	char option;
@@ -449,6 +453,7 @@ void addShip(Fleet* F)
 	} while (option != '5');
 }
 
+//user interface for delete ship 
 void DeleteShip(Fleet* F)
 {
 	vector<Ship*> list = F->shipList();
@@ -487,6 +492,7 @@ void DeleteShip(Fleet* F)
 
 }
 
+//user interface of fleet's menu creation
 Fleet* userInterfaceCreateFleet()
 {
 	string name;
@@ -533,12 +539,14 @@ Fleet* userInterfaceCreateFleet()
 	return newFleet;
 }
 
+
 condition_variable cv;
 mutex cv_m;
 
+//start the simulation
 void run(Fleet* fleet)
 {
-	long long unsigned int distance = (int)(3.121974372 * pow(10,10));//(0,17)
+	long long unsigned int distance = (int)(3.121974372 * pow(10,17));//(0,17)
 	long long unsigned int lightSpeed = 299792458;
 	long long unsigned int fleetSpeed = ((lightSpeed * 100) / sqrt(fleet->getWeight()));
 	long long unsigned int currentDistance = 0;
@@ -546,24 +554,39 @@ void run(Fleet* fleet)
 	std::unique_lock<std::mutex> lk(cv_m);
 	cout << fleet->getCorporationName() << " prepare for launch\n";
 	cv.wait(lk);
-	lk.unlock();
-	cv.notify_all();
 	cout << fleet->getCorporationName() << " launch!!\n";
+	lk.unlock();
+	//cv.notify_all();
 	while (true)
 	{
 		currentDistance += fleetSpeed;
 		fleet->setdistance(currentDistance);
-		//cout << fleet->getCorporationName() << " current distance: " << currentDistance << endl;
 		if (distance <= currentDistance)
 		{
 			break;
 		}
-		this_thread::sleep_for(chrono::seconds(1));//we'll gonna w8 for 4 years if we go with this. change for month for every sec
 		
 	}
 	cout << "Fleet " << fleet->getCorporationName() << " has reach Gaia!\n";
 }
 
+long long unsigned int second = 0;
+
+//managing the time and sync the fleet movement
+void timeManager()
+{
+	std::unique_lock<std::mutex> lk(cv_m);
+	cout << "Counter ready" << endl;
+	cv.wait(lk);
+	cout << "Counter Start!" << endl;
+	lk.unlock();
+	while (true)
+	{
+		second++;
+	}
+}
+
+//starting signal for fleets' launch
 void signals()
 {
 	this_thread::sleep_for(chrono::seconds(2));
@@ -594,6 +617,7 @@ int main()
 	{
 		threads.push_back(thread(run, fleets.at(i)));
 	}
+	threads.push_back(thread(timeManager));
 	threads.push_back(thread(signals));
 	
 	int test;
@@ -606,6 +630,10 @@ int main()
 			{
 				cout << fleets.at(i)->getCorporationName() << ": \t" << fleets.at(i)->getdistance()<< endl;
 			}
+				cout << "Second: " << second << endl;
+				cout << "Month: " << second / 2592000 << endl;
+				cout << "Year: " << second / 31104000 << endl;
+				cout << "decade: " << second / 311040000 << endl;
 		}
 		else
 		{
