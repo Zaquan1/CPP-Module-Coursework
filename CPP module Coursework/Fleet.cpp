@@ -13,7 +13,10 @@ int Fleet::getWeight() const
 
 	for (int i = 0; i < list.size(); i++)
 	{
-		weight += list.at(i)->getWeight();
+		if (!list.at(i)->isDestroyed())
+		{
+			weight += list.at(i)->getWeight();
+		}
 	}
 	if (hasMedic())
 		weight++;
@@ -340,11 +343,14 @@ void createShips()
 	colony.push_back(ColonyShip("Ferry", 500, 10, 5, 100));
 	colony.push_back(ColonyShip("Liner", 1000, 20, 7, 250));
 	colony.push_back(ColonyShip("Cloud", 2000, 30, 9, 750));
+	colony.push_back(ColonyShip("CatsOfCat", 10000, 20, 9, 10000));
 	solaris.push_back(SolarSailShip("Radiant", 50, 3, 5, 50));
 	solaris.push_back(SolarSailShip("Ebulient", 250, 50, 5, 500));
+	solaris.push_back(SolarSailShip("CatSun", 1000, 1000, 1, 1000000));
 	fighter.push_back(MilitaryEscortShip("Cruiser", 300, 2, 10, 0));
 	fighter.push_back(MilitaryEscortShip("Frigate", 1000, 7, 20, 10));
 	fighter.push_back(MilitaryEscortShip("Destroy", 2000, 19, 30, 25));
+	fighter.push_back(MilitaryEscortShip("CatDestroy", 10000, 200, 10, 1000));
 }
 
 string getString(std::istream & is)
@@ -590,7 +596,29 @@ int waitingFleet = 0;
 
 void alienAttack(Fleet* fleet)
 {
-
+	vector<Ship*> protectedShip = fleet->protectedShips();
+	vector<Ship*> unprotectedShip = fleet->unprotectedShips();
+	ColonyShip* cShip;
+	if (unprotectedShip.size() > 0)
+	{
+		int probability = round(0.25 * unprotectedShip.size());
+		for (int i = 0; i < probability; i++)
+		{
+			int random = rand() % unprotectedShip.size();
+			cShip = dynamic_cast<ColonyShip*> (unprotectedShip.at(random));
+			cShip->destroyShip();
+			unprotectedShip.erase(unprotectedShip.begin() + random);
+		}
+	}
+	if (!fleet->hasMedic())
+	{
+		vector<Ship*> list;
+		list.insert(list.end(), protectedShip.begin(), protectedShip.end());
+		list.insert(list.end(), unprotectedShip.begin(), unprotectedShip.end());
+		int random = rand() % list.size();
+		cShip = dynamic_cast<ColonyShip*> (list.at(random));
+		cShip->infect();
+	}
 }
 
 //start the simulation
@@ -619,6 +647,7 @@ void run(Fleet* fleet)
 		if (!meetAlien && (currentDistance > (distance / 2)))
 		{
 			alienAttack(fleet);
+			fleetSpeed = ((lightSpeed * 100) / sqrt(fleet->getWeight()));
 			meetAlien = true;
 		}
 
