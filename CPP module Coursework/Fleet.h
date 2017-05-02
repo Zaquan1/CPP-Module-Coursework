@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 #include <thread>
 #include <chrono>
@@ -77,9 +78,12 @@ public:
 	void deleteShip(Ship* i, vector<Ship*>& ships);
 	
 	void destroyShip(Ship* i);
+	void sortFleet();
+	void organizedFleet();
 
 	void setdistance(long long unsigned int c) { currentDistance = c; }
 	long long unsigned int getdistance() { return currentDistance; };
+
 private:
 
 	long long unsigned int currentDistance;
