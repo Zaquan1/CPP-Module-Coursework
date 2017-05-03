@@ -150,6 +150,7 @@ vector<Ship*> Fleet::shipList() const
 	return list;
 }
 
+//add buyed ship to the fleet
 void Fleet::addShip(Ship& nShip)
 {
 	int shipType = nShip.getShipType();
@@ -171,9 +172,11 @@ void Fleet::addShip(Ship& nShip)
 			MilitaryEscortShip* temp = new MilitaryEscortShip(*dynamic_cast<MilitaryEscortShip*>(tempship));
 			_militaryEscortShips.push_back(temp);
 		}
+		//minus the price
 		money = money - nShip.getCost();
 		cout << endl << nShip.getTypeName() << " successfully purchased\n";
 	}
+	//if amount of money not enough
 	else
 	{
 		cout << endl << "Current Money: " << getMoney() << ", not enough to buy " << nShip.getTypeName() << endl;
@@ -189,6 +192,7 @@ void Fleet::setMedic() { medic = !medic; }
 
 void Fleet::destroyShip(Ship* i) { i->destroyShip(); }
 
+//delete buyed ship(cancel buying)
 void Fleet::deleteShip(Ship* i)
 {
 	int type = i->getShipType();
@@ -221,6 +225,7 @@ void Fleet::deleteShip(Ship* i, vector<Ship*>& ships)
 	}
 }
 
+//sort ships in descending order based on their weight
 void Fleet::sortFleet()
 {
 	auto compare = [](const Ship* a, const Ship* b) -> bool {return a->getWeight() > b->getWeight(); };
@@ -229,6 +234,7 @@ void Fleet::sortFleet()
 	sort(_solarSailShips.begin(), _solarSailShips.end(), compare);
 }
 
+//sorting ship and set which ship to be protected
 void Fleet::organizedFleet()
 {
 	sortFleet();
@@ -345,7 +351,7 @@ vector<ColonyShip> colony;
 vector<SolarSailShip> solaris;
 vector<MilitaryEscortShip> fighter;
 
-//default ship option
+//default ship option(template)
 void createShips()
 {
 	colony.push_back(ColonyShip("Ferry", 500, 10, 5, 100));
@@ -391,6 +397,7 @@ void checkStatus(Fleet* newFleet)
 	cout << "______________________________\n\n";
 }
 
+//calculation for buying medic ship
 void buyMedic(Fleet* F)
 {
 	if (F->hasMedic())
@@ -551,6 +558,7 @@ void DeleteShip(Fleet* F)
 
 }
 
+//calculation for reading file
 void readDatFile(Fleet* F)
 {
 	ifstream inputFile;
@@ -564,6 +572,7 @@ void readDatFile(Fleet* F)
 	vector<string> ships;
 	vector<int> shipsAmount;
 
+	//get the name and amount of ships stated in the file
 	while (getline(inputFile, line))
 	{
 		istringstream ss(line);
@@ -582,6 +591,7 @@ void readDatFile(Fleet* F)
 	allList.insert(allList.end(), fighter.begin(), fighter.end());
 	allList.insert(allList.end(), solaris.begin(), solaris.end());
 	
+	//add the ship into the fleet
 	for (int i = 0; i < ships.size(); i++)
 	{
 		if (ships.at(i) == "Medic")
@@ -669,11 +679,13 @@ int completeFlight = 0;
 bool completeYear = false;
 Fleet* winner;
 
+//calculation for alien attack
 void alienAttack(Fleet* fleet)
 {
 	vector<Ship*> protectedShip = fleet->protectedShips();
 	vector<Ship*> unprotectedShip = fleet->unprotectedShips();
 	ColonyShip* cShip;
+	//check how much ship is unprotected for the calculation to destroy
 	if (unprotectedShip.size() > 0)
 	{
 		int probability = round(0.25 * unprotectedShip.size());
@@ -685,6 +697,7 @@ void alienAttack(Fleet* fleet)
 			unprotectedShip.erase(unprotectedShip.begin() + random);
 		}
 	}
+	//calculation for infection if medic is not present
 	if (!fleet->hasMedic())
 	{
 		vector<Ship*> list;
@@ -709,18 +722,23 @@ void run(Fleet* fleet)
 	
 	std::unique_lock<std::mutex> lk(cv_m);
 	cout << fleet->getCorporationName() << " prepare for launch\n";
+	//wait for signal to launch at the same time
 	cv.wait(lk);
 	cout << fleet->getCorporationName() << " launch!!\n";
 	lk.unlock();
+	//disqualified for fleet with no power
 	if (fleet->getEnergyConsumption() > fleet->EnergyProduction())
 	{
 		cout << "Fleet " << fleet->getCorporationName() << " consume too much energy, fleet " << fleet->getCorporationName() << " disqualified from competing\n";
+		completeFlight++;
 		return;
 	}
 	while (true)
 	{
+		//distance calculation
 		currentDistance += fleetSpeed;
 		fleet->setdistance(currentDistance);
+		//alien attack
 		if (!meetAlien && (currentDistance > (distance / 2)))
 		{
 			lk.lock();
@@ -731,46 +749,56 @@ void run(Fleet* fleet)
 			meetAlien = true;
 		}
 
+		//end if reach gaia
 		if (distance <= currentDistance)
 		{
 			break;
 		}
+		//sleep to sync with other thread
 		this_thread::sleep_for(chrono::seconds(1));
 		lk.lock();
 		waitingFleet++;
 		completeYear = false;
+		//notify timeManager thread if all ship has completed
 		cv.notify_all();
+		//wait for other fleet to complete their calculation
 		cv.wait(lk, []() {return completeYear; });
 		lk.unlock();
 	}
+	
 	lk.lock();
 	cout << "Fleet " << fleet->getCorporationName() << " has reach Gaia!\n";
 	winner = fleet;
 	this_thread::sleep_for(chrono::microseconds(50));
 	completeFlight++;
-	lk.unlock();
+	//notify gaia thread to start calculation
 	cv.notify_all();
+	lk.unlock();
 }
-
 
 //managing the time and sync the fleet movement
 void timeManager(int f)
 {
 	std::unique_lock<std::mutex> lk(cv_m);
 	cout << "Counter ready" << endl;
+	//wait to sync with other thread
 	cv.wait(lk);
 	cout << "Counter Start!" << endl;
 	lk.unlock();
 	while (true)
 	{
-		year++;
 		lk.lock();
-		//cout << waitingFleet - completeFlight << endl;
+		//wait for all the fleet to complete
 		cv.wait(lk, [&]() {return waitingFleet == (f - completeFlight); });
 		completeYear = true;
 		waitingFleet = 0;
+		//wake all fleet thread
 		cv.notify_all();
+		cout << "Year: " << year << endl;
 		lk.unlock();
+		//increase a year
+		year++;
+		//break if all fleet has reach gaia
 		if (completeFlight == f)
 		{
 			break;
@@ -778,11 +806,13 @@ void timeManager(int f)
 	}
 }
 
+//organize the population once fleet reach gaia
 void planetGaia(int f)
 {
 	int gaiaPopulation = 0;
 	std::unique_lock<std::mutex> lk(cv_m);
 	cout << "Planet Gaia created" << endl;
+	//sleep until at least 1 fleet reach gaia
 	cv.wait(lk, []() {return completeFlight > 0; });
 	Fleet* currentWinner = winner;
 	gaiaPopulation = currentWinner->getColonistCount();
@@ -790,7 +820,13 @@ void planetGaia(int f)
 	lk.unlock();
 	do
 	{
-		int checkLoop = 0;
+		lk.lock();
+		cout << "-------------" << endl;
+		cout << "Gaia Status" << endl;
+		cout << "-------------" << endl;
+		cout << "Current inhabitant: " << currentWinner->getCorporationName() << endl << "Current population: " << gaiaPopulation << endl;
+		cout << "-------------------------------------------" << endl;
+		lk.unlock();
 		while (previousYear == year && (completeFlight != f))
 		{
 			if (winner->getColonistCount() > gaiaPopulation)
@@ -798,17 +834,15 @@ void planetGaia(int f)
 				currentWinner = winner;
 				gaiaPopulation = winner->getColonistCount();
 			}
-			checkLoop++;
 		}
-		lk.lock();
-		cout << "tansition from " << previousYear << " -> " << year << " total check: " << checkLoop << endl;
-		lk.unlock();
 		gaiaPopulation += (gaiaPopulation * 0.05);
 		previousYear = year;
 
 	} while (completeFlight != f);
 	winner = currentWinner;
+	lk.lock();
 	cout << "Fleet " << winner->getCorporationName() << " win the game with total population of " << gaiaPopulation << endl;
+	lk.unlock();
 
 }
 
@@ -849,17 +883,16 @@ int main()
 	threads.push_back(thread(signals));
 	
 	int test = 1;
-		this_thread::sleep_for(chrono::seconds(7));
+		this_thread::sleep_for(chrono::seconds(8));
 	do
 	{
 		this_thread::sleep_for(chrono::seconds(1));
-		
+		std::unique_lock<std::mutex> lk(cv_m);
 		for (int i = 0; i < fleets.size(); i++)
 		{
 			cout << fleets.at(i)->getCorporationName() << ": \t" << fleets.at(i)->getdistance()<< endl;
 		}
-		cout << "Year: " << year << endl;
-	
+		lk.unlock();
 	} while (completeFlight != fleets.size());
 
 	for (int i = 0; i < threads.size(); i++)
