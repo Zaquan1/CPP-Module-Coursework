@@ -219,7 +219,7 @@ void Fleet::deleteShip(Ship* i, vector<Ship*>& ships)
 
 void Fleet::sortFleet()
 {
-	auto compare = [](const Ship& a, const Ship& b) -> bool {return a.getWeight() > b.getWeight(); };
+	auto compare = [](const Ship* a, const Ship* b) -> bool {return a->getWeight() > b->getWeight(); };
 	sort(_colonyShips.begin(), _colonyShips.end(), compare);
 	sort(_militaryEscortShips.begin(), _militaryEscortShips.end(), compare);
 	sort(_solarSailShips.begin(), _solarSailShips.end(), compare);
@@ -383,6 +383,27 @@ void checkStatus(Fleet* newFleet)
 	cout << "______________________________\n\n";
 }
 
+void buyMedic(Fleet* F)
+{
+	if (F->hasMedic())
+	{
+		cout << "\nAlready bought Medic Ship\n";
+	}
+	else
+	{
+		if (F->getMoney() - 1000 >= 0)
+		{
+			F->setMedic();
+			F->setMoney(F->getMoney() - 1000);
+			cout << "\nMedic successfully purchased\n";
+		}
+		else
+		{
+			cout << "\nNot enough money to buy Medic Ship\n";
+		}
+	}
+}
+
 //user interface for add ship
 void addShip(Fleet* F)
 {
@@ -471,23 +492,7 @@ void addShip(Fleet* F)
 			cin >> shipO;
 			if (shipO == 1)
 			{
-				if (F->hasMedic())
-				{
-					cout << "\nAlready bought Medic Ship\n";
-				}
-				else
-				{
-					if (F->getMoney() - 1000 >= 0)
-					{
-						F->setMedic();
-						F->setMoney(F->getMoney() - 1000);
-						cout << "\nMedic successfully purchased\n";
-					}
-					else
-					{
-						cout << "\nNot enough money to buy Medic Ship\n";
-					}
-				}
+				buyMedic(F);
 			}
 			break;
 		case '5':
@@ -537,6 +542,84 @@ void DeleteShip(Fleet* F)
 	
 
 }
+void readDatFile(Fleet* F)
+{
+	ifstream inputFile;
+	inputFile.open("015387-Fleet.dat");
+	if (inputFile.fail())
+	{
+		cout << "Error opening the file!\n";
+		return;
+	}
+	string line;
+	vector<string> ships;
+	vector<int> shipsAmount;
+
+	while (getline(inputFile, line))
+	{
+		istringstream ss(line);
+
+		string name;
+		int amount;
+
+		ss >> name >> amount;
+		ships.push_back(name);
+		shipsAmount.push_back(amount);
+		//cout << name << endl << amount << endl;
+	}
+	inputFile.close();
+	for (int i = 0; i < ships.size(); i++)
+	{
+		Ship* ship = NULL;
+		if (ships.at(i) == "Medic")
+		{
+			buyMedic(F);
+			continue;
+		}
+		for (int j = 0; j < colony.size(); j++)
+		{
+			if (ships.at(i) == colony.at(j).getTypeName())
+			{
+				ship = new ColonyShip(colony.at(j));
+				break;
+			}
+		}
+		if (ship == NULL)
+		{
+			for (int j = 0; j < solaris.size(); j++)
+			{
+				if (ships.at(i) == solaris.at(j).getTypeName())
+				{
+					ship = new SolarSailShip(solaris.at(j));
+					break;
+				}
+			}
+		}
+		if (ship == NULL)
+		{
+			for (int j = 0; j < fighter.size(); j++)
+			{
+				if (ships.at(i) == fighter.at(j).getTypeName())
+				{
+					ship = new MilitaryEscortShip(fighter.at(j));
+					break;
+				}
+			}
+		}
+		if (ship == NULL)
+		{
+			cout << ships.at(i) << " is not in the list!\n";
+			continue;
+		}
+		for (int j = 0; j < shipsAmount.at(i); j++)
+		{
+			Ship* temp = new Ship(*ship);
+			F->addShip(temp);
+		}
+		//delete ship;
+	}
+
+}
 
 //user interface of fleet's menu creation
 Fleet* userInterfaceCreateFleet()
@@ -556,7 +639,8 @@ Fleet* userInterfaceCreateFleet()
 		cout << "1. Check Fleet's Status\n";
 		cout << "2. Add ship\n";
 		cout << "3. Delete ship\n";
-		cout << "4. Done\n:: ";
+		cout << "4. Use .dat file\n";
+		cout << "5. Done\n:: ";
 		cin >> option;
 
 		switch (option)
@@ -571,6 +655,9 @@ Fleet* userInterfaceCreateFleet()
 			DeleteShip(newFleet);
 			break;
 		case '4':
+			readDatFile(newFleet);
+			break;
+		case '5':
 			cout << "Are you sure? (Y to exit, N to cancel) : ";
 			cin >> exit;
 			break;

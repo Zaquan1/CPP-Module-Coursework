@@ -24,6 +24,9 @@
   <ItemGroup>
     <ClCompile Include="Fleet.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="015387-Fleet.dat" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4935CDE0-CC6A-4C11-ADA9-B41E2CD3D735}</ProjectGuid>
     <RootNamespace>CPPmoduleCoursework</RootNamespace>
