@@ -1,6 +1,6 @@
 #include "Fleet.h"
 
-
+///////////////////////////////// Fleet Implementation //////////////////////////////////////////////
 Fleet::Fleet(string _name)
 	: corporationName(_name), money(10000), medic(false)
 {
@@ -150,32 +150,36 @@ vector<Ship*> Fleet::shipList() const
 	return list;
 }
 
-void Fleet::addShip(Ship* nShip)
+void Fleet::addShip(Ship& nShip)
 {
-	int shipType = nShip->getShipType();
-
-	if (money - nShip->getCost() >= 0)
+	int shipType = nShip.getShipType();
+	Ship* tempship = &nShip;
+	if (money - nShip.getCost() >= 0)
 	{
 		if (shipType == COLONY)
 		{
-			_colonyShips.push_back(nShip);
+			ColonyShip* temp = new ColonyShip(*dynamic_cast<ColonyShip*>(tempship));
+			_colonyShips.push_back(temp);
 		}
 		else if (shipType == SOLAR)
 		{
-			_solarSailShips.push_back(nShip);
+			SolarSailShip* temp = new SolarSailShip(*dynamic_cast<SolarSailShip*>(tempship));
+			_solarSailShips.push_back(temp);
 		}
 		else if (shipType == MILITARY)
 		{
-			_militaryEscortShips.push_back(nShip);
+			MilitaryEscortShip* temp = new MilitaryEscortShip(*dynamic_cast<MilitaryEscortShip*>(tempship));
+			_militaryEscortShips.push_back(temp);
 		}
-		money = money - nShip->getCost();
-		cout << endl << nShip->getTypeName() << " successfully purchased\n";
+		money = money - nShip.getCost();
+		cout << endl << nShip.getTypeName() << " successfully purchased\n";
 	}
 	else
 	{
-		cout << endl << "Current Money: " << getMoney() << ", not enough to buy " << nShip->getTypeName() << endl;
+		cout << endl << "Current Money: " << getMoney() << ", not enough to buy " << nShip.getTypeName() << endl;
 	}
 }
+
 
 int Fleet::getMoney() const { return money; }
 
@@ -254,11 +258,13 @@ void Fleet::organizedFleet()
 	}
 
 }
+////////////////////////// End Fleet Implementation ///////////////////////////////////////////////
 
-//////////////////////////Ship implementation//////////////////////////////////////////////////////
+////////////////////////// Ship implementation //////////////////////////////////////////////////////
 Ship::Ship(int t, string n, int c, int w, int e) 
 	:shipType(t), name(n), cost(c), weight(w), energyConsumption(e), destroyed(false)
 {}
+Ship::Ship() : name("") {}
 
 bool Ship::operator == (const Ship& d) const
 {
@@ -292,8 +298,9 @@ int Ship::compareShip(const Ship& d) const
 		return 1;
 	return 0;
 }
+////////////////////// End Ship Implementation ///////////////////////////////////////////////
 
-
+///////////////////// ColonyShip Implementation //////////////////////////////////////////////
 ColonyShip::ColonyShip(string n, int c, int w, int e, int col)
 	: Ship(1, n, c, w, e), colonists(col), infected(false), _protected(false)
 {}
@@ -310,8 +317,9 @@ bool ColonyShip::isProtected() const { return _protected; }
 void ColonyShip::underProtected() { _protected = true; }
 
 void ColonyShip::infect() { infected = true; }
+//////////////////////////// End ColonyShip Implementation ///////////////////////////////////////////////
 
-
+//////////////////////////// SolarSailShip Implementation ///////////////////////////////////////////////
 SolarSailShip::SolarSailShip(string n, int c, int w, int e, int eg)
 	: Ship(2, n, c, w, e), energyGeneration(eg)
 {}
@@ -320,19 +328,19 @@ SolarSailShip::SolarSailShip(const SolarSailShip& sss)
 {}
 
 int SolarSailShip::getEnergyProduction() const { return energyGeneration; }
+//////////////////////////// End SolarSailShip Implementation ///////////////////////////////////////
 
-
+//////////////////////////// MilitaryEscortShip Implementation ///////////////////////////////////////
 MilitaryEscortShip::MilitaryEscortShip(string n, int c, int w, int e, int nn)
 	: Ship(3, n, c, w, e), nr(nn)
 {}
 MilitaryEscortShip::MilitaryEscortShip(const MilitaryEscortShip& mes)
 	: MilitaryEscortShip(mes.name, mes.cost, mes.weight, mes.energyConsumption, mes.nr)
 {}
-
 int MilitaryEscortShip::getNrProtected() const { return nr; }
-////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////// End MilitaryEscortShip Implementation ///////////////////////////////////////
 
-//default ship
+//////////////////////////// User Interface Creation /////////////////////////////////////////////////////
 vector<ColonyShip> colony;
 vector<SolarSailShip> solaris;
 vector<MilitaryEscortShip> fighter;
@@ -349,7 +357,7 @@ void createShips()
 	solaris.push_back(SolarSailShip("CatSun", 1000, 1000, 1, 1000000));
 	fighter.push_back(MilitaryEscortShip("Cruiser", 300, 2, 10, 0));
 	fighter.push_back(MilitaryEscortShip("Frigate", 1000, 7, 20, 10));
-	fighter.push_back(MilitaryEscortShip("Destroy", 2000, 19, 30, 25));
+	fighter.push_back(MilitaryEscortShip("Destroyer", 2000, 19, 30, 25));
 	fighter.push_back(MilitaryEscortShip("CatDestroy", 10000, 200, 10, 1000));
 }
 
@@ -439,7 +447,7 @@ void addShip(Fleet* F)
 			shipO--;
 			if (shipO < colony.size())
 			{
-				F->addShip(new ColonyShip(colony.at(shipO)));
+				F->addShip(colony.at(shipO));
 			}
 
 			break;
@@ -460,7 +468,7 @@ void addShip(Fleet* F)
 			shipO--;
 			if (shipO < solaris.size())
 			{
-				F->addShip(new SolarSailShip(solaris.at(shipO)));
+				F->addShip(solaris.at(shipO));
 			}
 			break;
 
@@ -480,7 +488,7 @@ void addShip(Fleet* F)
 			shipO--;
 			if (shipO < fighter.size())
 			{
-				F->addShip(new MilitaryEscortShip(fighter.at(shipO)));
+				F->addShip(fighter.at(shipO));
 			}
 			break;
 		case '4':
@@ -542,6 +550,7 @@ void DeleteShip(Fleet* F)
 	
 
 }
+
 void readDatFile(Fleet* F)
 {
 	ifstream inputFile;
@@ -565,60 +574,37 @@ void readDatFile(Fleet* F)
 		ss >> name >> amount;
 		ships.push_back(name);
 		shipsAmount.push_back(amount);
-		//cout << name << endl << amount << endl;
 	}
+	
 	inputFile.close();
+	std::vector<std::reference_wrapper<Ship>> allList;
+	allList.insert(allList.end(), colony.begin(), colony.end());
+	allList.insert(allList.end(), fighter.begin(), fighter.end());
+	allList.insert(allList.end(), solaris.begin(), solaris.end());
+	
 	for (int i = 0; i < ships.size(); i++)
 	{
-		Ship* ship = NULL;
 		if (ships.at(i) == "Medic")
 		{
 			buyMedic(F);
 			continue;
 		}
-		for (int j = 0; j < colony.size(); j++)
+		for (int j = 0; j < allList.size(); j++)
 		{
-			if (ships.at(i) == colony.at(j).getTypeName())
+			if (ships.at(i) == allList.at(j).get().getTypeName())
 			{
-				ship = new ColonyShip(colony.at(j));
+				for (int k = 0; k < shipsAmount.at(i); k++)
+				{
+					F->addShip(allList.at(j).get());
+				}
 				break;
 			}
-		}
-		if (ship == NULL)
-		{
-			for (int j = 0; j < solaris.size(); j++)
+			if (j == allList.size() - 1)
 			{
-				if (ships.at(i) == solaris.at(j).getTypeName())
-				{
-					ship = new SolarSailShip(solaris.at(j));
-					break;
-				}
+				cout << endl << ships.at(i) << " is not in the list!\n";
 			}
 		}
-		if (ship == NULL)
-		{
-			for (int j = 0; j < fighter.size(); j++)
-			{
-				if (ships.at(i) == fighter.at(j).getTypeName())
-				{
-					ship = new MilitaryEscortShip(fighter.at(j));
-					break;
-				}
-			}
-		}
-		if (ship == NULL)
-		{
-			cout << ships.at(i) << " is not in the list!\n";
-			continue;
-		}
-		for (int j = 0; j < shipsAmount.at(i); j++)
-		{
-			Ship* temp = new Ship(*ship);
-			F->addShip(temp);
-		}
-		//delete ship;
 	}
-
 }
 
 //user interface of fleet's menu creation
@@ -672,14 +658,16 @@ Fleet* userInterfaceCreateFleet()
 	newFleet->organizedFleet();
 	return newFleet;
 }
+//////////////////////////////// End User Interface Creation ///////////////////////////////////////////
 
-
-
+/////////////////////////////// Threading Implementation //////////////////////////////////////////////
 condition_variable cv;
 mutex cv_m;
-long long unsigned int second = 0;
-bool completeSecond = false;
+int year = 0;
 int waitingFleet = 0;
+int completeFlight = 0;
+bool completeYear = false;
+Fleet* winner;
 
 void alienAttack(Fleet* fleet)
 {
@@ -702,19 +690,21 @@ void alienAttack(Fleet* fleet)
 		vector<Ship*> list;
 		list.insert(list.end(), protectedShip.begin(), protectedShip.end());
 		list.insert(list.end(), unprotectedShip.begin(), unprotectedShip.end());
-		int random = rand() % list.size();
-		cShip = dynamic_cast<ColonyShip*> (list.at(random));
-		cShip->infect();
+		if (list.size() > 0)
+		{
+			int random = rand() % list.size();
+			cShip = dynamic_cast<ColonyShip*> (list.at(random));
+			cShip->infect();
+		}
 	}
 }
 
 //start the simulation
 void run(Fleet* fleet)
 {
-	long long unsigned int distance = (int)(3.121974372 * pow(10,17));//(0,17)
-	long long unsigned int lightSpeed = 299792458;
-	long long unsigned int fleetSpeed = ((lightSpeed * 100) / sqrt(fleet->getWeight()));
-	long long unsigned int currentDistance = 0;
+	int distance = 33;	//lightyear
+	double fleetSpeed = ((1 * 10) / sqrt(fleet->getWeight()));	//speed in year/lightyear
+	double currentDistance = 0;
 	bool meetAlien = false;
 	
 	std::unique_lock<std::mutex> lk(cv_m);
@@ -733,8 +723,11 @@ void run(Fleet* fleet)
 		fleet->setdistance(currentDistance);
 		if (!meetAlien && (currentDistance > (distance / 2)))
 		{
+			lk.lock();
+			cout << "Fleet " << fleet->getCorporationName() << " is under attack by space pirate!\n";
+			lk.unlock();
 			alienAttack(fleet);
-			fleetSpeed = ((lightSpeed * 100) / sqrt(fleet->getWeight()));
+			fleetSpeed = ((1 * 10) / sqrt(fleet->getWeight()));
 			meetAlien = true;
 		}
 
@@ -742,15 +735,21 @@ void run(Fleet* fleet)
 		{
 			break;
 		}
+		this_thread::sleep_for(chrono::seconds(1));
 		lk.lock();
 		waitingFleet++;
+		completeYear = false;
 		cv.notify_all();
-		completeSecond = false;
-		cv.wait(lk, []() {return completeSecond; });
-		cv.notify_all();
+		cv.wait(lk, []() {return completeYear; });
 		lk.unlock();
 	}
+	lk.lock();
 	cout << "Fleet " << fleet->getCorporationName() << " has reach Gaia!\n";
+	winner = fleet;
+	this_thread::sleep_for(chrono::microseconds(50));
+	completeFlight++;
+	lk.unlock();
+	cv.notify_all();
 }
 
 
@@ -758,20 +757,59 @@ void run(Fleet* fleet)
 void timeManager(int f)
 {
 	std::unique_lock<std::mutex> lk(cv_m);
-	cout << "Counter ready: "<< f << endl;
+	cout << "Counter ready" << endl;
 	cv.wait(lk);
 	cout << "Counter Start!" << endl;
 	lk.unlock();
 	while (true)
 	{
-		second++;
+		year++;
 		lk.lock();
-		cv.wait(lk, [&]() {return waitingFleet == f; });
+		//cout << waitingFleet - completeFlight << endl;
+		cv.wait(lk, [&]() {return waitingFleet == (f - completeFlight); });
+		completeYear = true;
 		waitingFleet = 0;
-		completeSecond = true;
 		cv.notify_all();
 		lk.unlock();
+		if (completeFlight == f)
+		{
+			break;
+		}
 	}
+}
+
+void planetGaia(int f)
+{
+	int gaiaPopulation = 0;
+	std::unique_lock<std::mutex> lk(cv_m);
+	cout << "Planet Gaia created" << endl;
+	cv.wait(lk, []() {return completeFlight > 0; });
+	Fleet* currentWinner = winner;
+	gaiaPopulation = currentWinner->getColonistCount();
+	int previousYear = year;
+	lk.unlock();
+	do
+	{
+		int checkLoop = 0;
+		while (previousYear == year && (completeFlight != f))
+		{
+			if (winner->getColonistCount() > gaiaPopulation)
+			{
+				currentWinner = winner;
+				gaiaPopulation = winner->getColonistCount();
+			}
+			checkLoop++;
+		}
+		lk.lock();
+		cout << "tansition from " << previousYear << " -> " << year << " total check: " << checkLoop << endl;
+		lk.unlock();
+		gaiaPopulation += (gaiaPopulation * 0.05);
+		previousYear = year;
+
+	} while (completeFlight != f);
+	winner = currentWinner;
+	cout << "Fleet " << winner->getCorporationName() << " win the game with total population of " << gaiaPopulation << endl;
+
 }
 
 //starting signal for fleets' launch
@@ -787,6 +825,7 @@ void signals()
 	std::lock_guard<std::mutex> lk(cv_m);
 	cv.notify_all();
 }
+/////////////////////////////////// End Threading Implementation ////////////////////////////////////////////////////////
 
 int main()
 {
@@ -806,32 +845,35 @@ int main()
 		threads.push_back(thread(run, fleets.at(i)));
 	}
 	threads.push_back(thread(timeManager, fleets.size()));
+	threads.push_back(thread(planetGaia, fleets.size()));
 	threads.push_back(thread(signals));
 	
-	int test;
+	int test = 1;
+		this_thread::sleep_for(chrono::seconds(7));
 	do
 	{
-		cin >> test;
-		if (test == 1)
+		this_thread::sleep_for(chrono::seconds(1));
+		
+		for (int i = 0; i < fleets.size(); i++)
 		{
-			for (int i = 0; i < fleets.size(); i++)
-			{
-				cout << fleets.at(i)->getCorporationName() << ": \t" << fleets.at(i)->getdistance()<< endl;
-			}
-			cout << "Second: " << second << endl;
-			cout << "Month: " << second / 2592000 << endl;
-			cout << "Year: " << second / 31104000 << endl;
-			cout << "decade: " << second / 311040000 << endl;
+			cout << fleets.at(i)->getCorporationName() << ": \t" << fleets.at(i)->getdistance()<< endl;
 		}
-		else
-		{
-			break;
-		}
-	} while (test == 1);
+		cout << "Year: " << year << endl;
+	
+	} while (completeFlight != fleets.size());
 
 	for (int i = 0; i < threads.size(); i++)
 	{
-		threads.at(i).join();
+		if (threads.at(i).joinable())
+		{
+			threads.at(i).join();
+			cout << "Thread " << i << " joint success\n";
+		}
+		else
+		{
+			cout << "Thread " << i << " already detatch\n";
+		}
 	}
+	cout << "Game Over!" << endl;
 	
 }

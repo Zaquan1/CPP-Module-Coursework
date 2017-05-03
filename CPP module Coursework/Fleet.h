@@ -20,6 +20,7 @@ class Ship
 
 public:
 	Ship(int t, string n, int c, int w, int e);
+	Ship();
 	virtual ~Ship() {};
 	bool operator == (const Ship& d) const;
 	
@@ -32,7 +33,7 @@ public:
 	bool isDestroyed() const;
 	void destroyShip();
 
-	virtual void status() const {};
+	virtual void status() const { cout << name << "\t" << cost << "\t" << weight << "\t" << energyConsumption << endl; };
 
 	int compareShip(const Ship& d) const;
 
@@ -72,7 +73,7 @@ public:
 	vector<Ship*> colonyShips() const;
 	vector<Ship*> shipList() const;
 
-	void addShip(Ship* nShip);
+	void addShip(Ship& nShip);
 	int getMoney() const;
 	void setMoney(int n);
 	void setMedic();
@@ -83,12 +84,12 @@ public:
 	void sortFleet();
 	void organizedFleet();
 
-	void setdistance(long long unsigned int c) { currentDistance = c; }
-	long long unsigned int getdistance() { return currentDistance; };
+	void setdistance(double c) { currentDistance = c; }
+	double getdistance() { return currentDistance; };
 
 private:
 
-	long long unsigned int currentDistance;
+	double currentDistance;
 	string corporationName;
 	int money;
 	bool medic;
